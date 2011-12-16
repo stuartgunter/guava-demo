@@ -33,8 +33,8 @@ public class FunctionsTest {
         };
 
         final String input = "150"; // represents 1.50
+        final Function<String, BigDecimal> stringToIntToBigDecimal = Functions.compose(intToMoney, stringToInt);
 
-        assertEquals(new BigDecimal(1.5d),
-                Functions.compose(intToMoney, stringToInt).apply(input));
+        assertEquals(new BigDecimal(1.5d), stringToIntToBigDecimal.apply(input));
     }
 }

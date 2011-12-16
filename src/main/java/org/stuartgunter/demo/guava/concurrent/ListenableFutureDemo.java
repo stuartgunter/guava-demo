@@ -16,7 +16,12 @@ public class ListenableFutureDemo {
     public static void main(String... args) throws Exception {
         final ExecutorService executorService = Executors.newFixedThreadPool(1);
 
-        new ListenableFutureDemo(executorService).start();
+        ListenableFutureDemo app = new ListenableFutureDemo(executorService);
+        app.runWithListener();
+        //app.runWithCallback();
+        //app.runWithChain();
+
+        app.stop();
     }
     
 
@@ -26,33 +31,39 @@ public class ListenableFutureDemo {
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
     }
 
-    public void start() throws Exception {
+    public void stop() {
+        listeningExecutorService.shutdown();
+    }
+
+    public void runWithListener() throws Exception {
         // calling addListener directly
         ListenableFuture<String> future1 = listeningExecutorService.submit(new SleepingCallable("Hello", 2000));
         future1.addListener(new Runnable() {
             public void run() {
-                System.out.println("Listener: DONE");
+                System.out.println(Thread.currentThread().getName() + ": Listener: DONE");
             }
         }, listeningExecutorService);
-        System.out.println("Future1: " + future1.get());
+        
+        System.out.println(Thread.currentThread().getName() + ": Future1: " + future1.get());
+    }
 
-
-        // calling addCallback
+    public void runWithCallback() throws Exception {
         ListenableFuture<String> future2 = listeningExecutorService.submit(new SleepingCallable("Hello", 2000));
         Futures.addCallback(future2,
                 new FutureCallback<String>() {
                     public void onSuccess(String result) {
-                        System.out.println("FutureCallback: SUCCESS - " + result);
+                        System.out.println(Thread.currentThread().getName() + ": FutureCallback: SUCCESS - " + result);
                     }
 
                     public void onFailure(Throwable t) {
-                        System.out.println("FutureCallback: FAILURE - " + t.getMessage());
+                        System.out.println(Thread.currentThread().getName() + ": FutureCallback: FAILURE - " + t.getMessage());
                     }
                 });
-        System.out.println("Future2: " + future2.get());
 
+        System.out.println(Thread.currentThread().getName() + ": Future2: " + future2.get());
+    }
 
-        // chaining ListenableFuture
+    public void runWithChain() throws Exception {
         ListenableFuture<String> future3 = listeningExecutorService.submit(new SleepingCallable("Hello", 2000));
         ListenableFuture<String> future4 = Futures.chain(future3,
                 new Function<String, ListenableFuture<? extends String>>() {
@@ -60,8 +71,7 @@ public class ListenableFutureDemo {
                         return listeningExecutorService.submit(new SleepingCallable(input + " World", 2000));
                     }
                 });
-        System.out.println("Future4: " + future4.get());
 
-        listeningExecutorService.shutdown();
+        System.out.println(Thread.currentThread().getName() + ": Future4: " + future4.get());
     }
 }
